@@ -1,0 +1,8 @@
+{{- $opts := dict
+  "rendererPath" "js/react/client.ts"
+  "serverRendererPath" "js/react/server.ts"
+  "componentPath" .Params.path
+  "context" .Page
+  "props" .Params
+-}}
+{{- partial "hugoIsland" $opts -}}

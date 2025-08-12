@@ -1,0 +1,43 @@
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  {{- $bundle := js.Batch "js/bundle" -}}
+  {{- with $bundle.Config -}}
+    {{- .SetOptions (dict
+      "minify" (not hugo.IsDevelopment)
+      "target" "esnext"
+      "format" "esm"
+      "JSX" "automatic"
+      "JSXImportSource" "react"
+      )
+    -}}
+  {{- end -}}
+
+  {{- $islandRuntimePath := "js/island-runtime.ts" -}}
+
+  {{- $islandRuntimeResource := resources.Get $islandRuntimePath -}}
+  {{- if not $islandRuntimeResource -}}
+    {{- errorf "resource not found: %s" $islandRuntimePath -}}
+  {{- end -}}
+
+  {{- with $bundle.Group "main" -}}
+    {{- with .Script "main" -}}
+      {{- .SetOptions (dict "resource" $islandRuntimeResource) -}}
+    {{- end -}}
+  {{- end -}}
+
+  {{- with (templates.Defer (dict "key" "global")) -}}
+    {{- $bundle := js.Batch "js/bundle" -}}
+    {{- with $bundle.Build -}}
+      {{- range index .Groups "main" -}}
+        {{ if eq .MediaType.SubType "css" }}
+          <link href="{{ .RelPermalink }}" rel="stylesheet" />
+        {{ else }}
+          <script src="{{ .RelPermalink }}" type="module"></script>
+        {{ end }}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+</head>

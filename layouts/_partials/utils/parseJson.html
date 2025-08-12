@@ -1,0 +1,3 @@
+{{ $resource := resources.FromString (add (anchorize .) ".json") . }}
+{{ $result := $resource | transform.Unmarshal }}
+{{ return $result }}

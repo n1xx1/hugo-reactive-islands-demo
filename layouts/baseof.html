@@ -1,0 +1,17 @@
+{{- $.Page.Store.Set "script-islands" (slice) -}}
+<!doctype html>
+<html
+  lang="{{ default .Site.Language.Lang .Site.LanguageCode }}"
+  dir="{{ default `ltr` .Site.Language.LanguageDirection }}"
+>
+  {{- partial "layout/head" . -}}
+  <body>
+    {{- template "main" . -}}
+  </body>
+</html>
+
+{{- define "main" -}}
+  <article class="container mx-auto px-4">
+    {{- .Content -}}
+  </article>
+{{- end -}}

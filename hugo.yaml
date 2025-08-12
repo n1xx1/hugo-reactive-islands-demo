@@ -1,0 +1,28 @@
+baseURL: "http://example.org"
+languageCode: "en-us"
+title: "My New Hugo Site"
+build:
+  buildStats:
+    enable: true
+  cachebusters:
+    - source: assets/notwatching/hugo_stats\.json
+      target: css
+    - source: assets/.*\.(js|ts|jsx|tsx)
+      target: js
+  noJSConfigInAssets: true
+markup:
+  goldmark:
+    parser:
+      attribute:
+        block: true
+        title: true
+      autoHeadingIDType: github-ascii
+    renderer:
+      unsafe: true
+module:
+  mounts:
+    - source: assets
+      target: assets
+    - source: hugo_stats.json
+      target: assets/notwatching/hugo_stats.json
+      disableWatch: true

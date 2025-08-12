@@ -1,0 +1,81 @@
+{{- $rendererResource := resources.Get .rendererPath -}}
+{{- if not $rendererResource -}}
+  {{- errorf "resource not found: %s" .rendererPath -}}
+{{- end -}}
+
+{{- $rendererId := anchorize .rendererPath -}}
+{{- $batch := js.Batch "js/bundle" -}}
+{{- with $batch.Group $rendererId -}}
+  {{- with .Runner $rendererId -}}
+    {{- .SetOptions (dict "resource" $rendererResource) -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $componentResource := resources.Get .componentPath -}}
+{{- if not $componentResource -}}
+  {{- errorf "resource not found: %s" .componentPath -}}
+{{- end -}}
+
+{{- $componentId := anchorize .componentPath -}}
+{{- with $batch.Group $componentId -}}
+  {{- with .Runner $componentId -}}
+    {{- .SetOptions (dict "resource" $componentResource) -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $uid := printf "%s-%s-%d" $rendererId $componentId math.Counter -}}
+{{- $jsonProps := .props | jsonify -}}
+
+{{- $renderedContentCode := printf `
+  import { renderToStaticMarkup } from "%[1]s";
+  import * as componentModule from "%[2]s";
+  __RUN__ = () => renderToStaticMarkup(componentModule[%[4]s], %[3]s, %[5]s);`
+  .serverRendererPath
+  .componentPath
+  $jsonProps
+  ("default" | jsonify)
+  (dict "uid" $uid | jsonify)
+-}}
+{{- $renderedResult := partial "utils/execJs" $renderedContentCode -}}
+
+{{- $renderedAttrs := printf ` %s="%s"` "props" (htmlEscape $jsonProps) -}}
+{{- range $k, $v := $renderedResult.attrs -}}
+  {{- $renderedAttrs = add $renderedAttrs (printf ` %s="%s"` $k (htmlEscape $v)) -}}
+{{- end -}}
+
+{{- $deferKey := printf "%s-%d" (anchorize .context.Path) math.Counter -}}
+{{- $deferData := dict
+  "rendererId" $rendererId
+  "componentId" $componentId
+  "renderedContent" $renderedResult.html
+  "renderedAttrs" $renderedAttrs
+-}}
+
+{{- with (templates.Defer (dict "key" $deferKey "data" $deferData)) -}}
+  {{- $rendererUrl := "" -}}
+  {{- $componentUrl := "" -}}
+
+  {{- $data := . -}}
+  {{- $batch := js.Batch "js/bundle" -}}
+  {{- with $batch.Build -}}
+    {{- range index .Groups $data.rendererId -}}
+      {{- if hasSuffix .Name "_runner.js" -}}
+        {{- $rendererUrl = .RelPermalink -}}
+      {{- end -}}
+    {{- end -}}
+    {{- range index .Groups $data.componentId -}}
+      {{- if hasSuffix .Name "_runner.js" -}}
+        {{- $componentUrl = .RelPermalink -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+
+
+  <hugo-island
+    renderer-url="{{ $rendererUrl }}"
+    component-url="{{ $componentUrl }}"
+    {{ .renderedAttrs | safeHTMLAttr }}
+  >
+    {{- .renderedContent | safeHTML -}}
+  </hugo-island>
+{{- end -}}
