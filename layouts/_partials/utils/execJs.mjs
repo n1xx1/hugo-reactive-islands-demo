@@ -3,7 +3,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const code = process.env.__EXECJS_CODE || "";
-const timeout = process.env.__EXECJS_TIMEOUT || 0;
+const timeout = +(process.env.__EXECJS_TIMEOUT || "0");
 
 const virtualPath = pathToFileURL(
   path.join(process.cwd(), "__entrypoint__.mjs"),
@@ -32,10 +32,21 @@ registerHooks({
 
   try {
     await import(virtualPath);
+
     if (typeof globalThis.__RUN__ !== "function") {
       throw new Error("__RUN__ not a function");
     }
-    const result = await __RUN__();
+
+    const timeoutPromise =
+      timeout > 0 &&
+      new Promise((_ful, rej) =>
+        setTimeout(() => rej(new Error("timeout")), timeout * 1000),
+      );
+
+    const result = await Promise.race([
+      __RUN__(),
+      ...(timeoutPromise ? [timeoutPromise] : []),
+    ]);
     output = { result };
   } catch (e) {
     output = { error: true, message: `${e}` };

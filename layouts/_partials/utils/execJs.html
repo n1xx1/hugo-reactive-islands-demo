@@ -11,7 +11,7 @@
 }}
 {{ $resourceCode := resources.FromString
   (printf "execute-js-%d.css" math.Counter)
-  (printf "code: %s;\ntimeout: 3000;\n" (jsonify $resourceBundle.Content))
+  (printf "code: %s;\ntimeout: 3;\n" (jsonify $resourceBundle.Content))
 }}
 
 {{ $pluginPath := path.Join (path.Dir templates.Current.Filename) "execJs-plugin.cjs" }}
