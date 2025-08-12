@@ -13,8 +13,6 @@ module.exports = (opts = {}) => {
           root.nodes.find((n) => n.prop === "timeout").value ?? "0",
         );
 
-        console.log("AWDONAOIWNDOANDOANOD");
-
         const execJs = path.join(__dirname, "./execJs.mjs");
         const child = spawn(process.execPath, [execJs], {
           stdio: "inherit",
