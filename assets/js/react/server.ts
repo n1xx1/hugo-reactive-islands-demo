@@ -1,22 +1,31 @@
+import type { RenderToStaticMarkupOptions } from "@/island-runtime";
 import { createElement, type ReactNode } from "react";
 import { renderToReadableStream } from "react-dom/server";
+import StaticHtml from "./static-html";
+
+interface Context {
+  uid: string;
+}
 
 export async function renderToStaticMarkup(
-  Component: any,
-  props: Record<string, any>,
-  context: { uid: string },
+  config: RenderToStaticMarkupOptions<Context>,
 ) {
-  const vnode = createElement(Component, props);
-  const html = await renderToString(vnode, context.uid);
-  const attrs = { prefix: context.uid };
+  const newProps = { ...config.props };
+
+  if (config.children) {
+    newProps.children = createElement(StaticHtml, { value: config.children });
+  }
+
+  const vnode = createElement(config.Component, newProps);
+  const html = await renderToString(vnode, config.context);
+  const attrs = { prefix: config.context.uid };
   return { html, attrs };
 }
 
-export async function renderToString(
-  children: ReactNode,
-  identifierPrefix?: string,
-) {
-  const stream = await renderToReadableStream(children, { identifierPrefix });
+export async function renderToString(children: ReactNode, context: Context) {
+  const stream = await renderToReadableStream(children, {
+    identifierPrefix: context.uid,
+  });
   await stream.allReady;
   return readableStreamToString(stream);
 }

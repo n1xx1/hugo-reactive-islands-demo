@@ -1,6 +1,7 @@
 import type { HugoIsland } from "@/island-runtime";
 import { createElement, startTransition } from "react";
 import { hydrateRoot, type Root } from "react-dom/client";
+import StaticHtml from "./static-html";
 
 function isAlreadyHydrated(element: HTMLElement) {
   for (const key in element) {
@@ -22,18 +23,30 @@ const getOrCreateRoot = (element: HTMLElement, creator: () => Root) => {
 };
 
 export default function hydrator(element: HugoIsland) {
-  return (Component: any, props: any) => {
-    const componentEl = createElement(Component, props);
+  return (
+    Component: any,
+    props: Record<string, any>,
+    { default: childrenSlot, ...slotted }: Record<string, any>,
+  ) => {
+    const renderOptions = {
+      identifierPrefix: element.getAttribute("prefix") ?? undefined,
+    };
+
+    for (const [key, value] of Object.entries(slotted)) {
+      props[key] = createElement(StaticHtml, { value, name: key });
+    }
+
+    const children = childrenSlot
+      ? createElement(StaticHtml, { value: childrenSlot })
+      : undefined;
+
+    const componentEl = createElement(Component, props, children);
 
     const rootKey = isAlreadyHydrated(element);
     // HACK: delete internal react marker for nested components to suppress aggressive warnings
     if (rootKey) {
       delete element[rootKey];
     }
-
-    const renderOptions = {
-      identifierPrefix: element.getAttribute("prefix") ?? undefined,
-    };
 
     startTransition(() => {
       const root = getOrCreateRoot(element, () => {

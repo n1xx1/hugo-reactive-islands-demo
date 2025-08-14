@@ -25,16 +25,15 @@ registerHooks({
 });
 
 (async () => {
-  globalThis.__RUN__ = {};
   let output;
 
   console.log(`--EVAL-LOGS-BEGIN--`);
 
   try {
-    await import(virtualPath);
+    const { default: runner } = await import(virtualPath);
 
-    if (typeof globalThis.__RUN__ !== "function") {
-      throw new Error("__RUN__ not a function");
+    if (typeof runner !== "function") {
+      throw new Error("module did not export a function");
     }
 
     const timeoutPromise =
@@ -44,7 +43,7 @@ registerHooks({
       );
 
     const result = await Promise.race([
-      __RUN__(),
+      runner(),
       ...(timeoutPromise ? [timeoutPromise] : []),
     ]);
     output = { result };

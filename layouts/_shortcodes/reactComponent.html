@@ -1,8 +1,13 @@
+{{- $inner := "" -}}
+{{- with .InnerDeindent | strings.TrimSpace -}}
+  {{- $inner = . | $.Page.RenderString -}}
+{{- end -}}
 {{- $opts := dict
-  "rendererPath" "js/react/client.ts"
-  "serverRendererPath" "js/react/server.ts"
+  "rendererPath" "@/react/client.ts"
+  "serverRendererPath" "@/react/server.ts"
   "componentPath" .Params.path
   "context" .Page
   "props" .Params
+  "inner" $inner
 -}}
 {{- partial "hugoIsland" $opts -}}

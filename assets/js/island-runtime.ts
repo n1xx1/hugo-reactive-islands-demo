@@ -86,6 +86,15 @@ class HugoIsland extends HTMLElement {
     // when the parent island hydrates and re-creates this island.
     if (!this.isConnected) return;
 
+    const slotted = this.querySelectorAll("astro-slot");
+    const slots: Record<string, string> = {};
+
+    for (const slot of slotted) {
+      const closest = slot.closest(this.tagName);
+      if (!closest?.isSameNode(this)) continue;
+      slots[slot.getAttribute("name") || "default"] = slot.innerHTML;
+    }
+
     let props: Record<string, unknown>;
 
     try {
@@ -116,7 +125,7 @@ class HugoIsland extends HTMLElement {
       hydrationTimeStart = performance.now();
     }
 
-    await hydrator(this.Component, props);
+    await hydrator(this.Component, props, slots);
 
     if (process.env.NODE_ENV === "development" && hydrationTimeStart) {
       this.setAttribute(
@@ -143,3 +152,10 @@ if (!window.customElements.get("hugo-island")) {
 }
 
 export type { HugoIsland };
+
+export interface RenderToStaticMarkupOptions<TContext> {
+  Component: any;
+  props: Record<string, any>;
+  children: string;
+  context: TContext;
+}

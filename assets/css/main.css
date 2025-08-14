@@ -2,3 +2,8 @@
 
 @source "hugo_stats.json";
 @source "assets";
+
+hugo-island,
+hugo-slot {
+  @apply contents;
+}

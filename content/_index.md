@@ -1,3 +1,7 @@
 # Index
 
-{{< reactComponent path="js/components/example.tsx" >}}
+{{< reactComponent path="@/components/example.tsx" >}}
+
+static content `Example`
+
+{{< /reactComponent >}}

@@ -1,40 +1,47 @@
-{{- $rendererResource := resources.Get .rendererPath -}}
-{{- if not $rendererResource -}}
-  {{- errorf "resource not found: %s" .rendererPath -}}
-{{- end -}}
-
-{{- $rendererId := anchorize .rendererPath -}}
 {{- $batch := js.Batch "js/bundle" -}}
+
+{{- $rendererId := xxhash .rendererPath -}}
+{{- $rendererResource := resources.FromString
+  (printf "%s_resource.js" $rendererId)
+  (printf `export * from "%[1]s"; export { default } from "%[1]s"; export const __hugo_runner = true;` .rendererPath)
+-}}
 {{- with $batch.Group $rendererId -}}
-  {{- with .Runner $rendererId -}}
-    {{- .SetOptions (dict "resource" $rendererResource) -}}
+  {{- with .Runner "_" -}}
+    {{- .SetOptions (dict "resource" $rendererResource "export" "__hugo_runner") -}}
   {{- end -}}
 {{- end -}}
 
-{{- $componentResource := resources.Get .componentPath -}}
-{{- if not $componentResource -}}
-  {{- errorf "resource not found: %s" .componentPath -}}
-{{- end -}}
-
-{{- $componentId := anchorize .componentPath -}}
+{{- $componentId := xxhash .componentPath -}}
+{{- $componentResource := resources.FromString
+  (printf "%s_resource.js" $componentId)
+  (printf `export * from "%[1]s"; export { default } from "%[1]s"; export const __hugo_runner = true;` .componentPath)
+-}}
 {{- with $batch.Group $componentId -}}
-  {{- with .Runner $componentId -}}
-    {{- .SetOptions (dict "resource" $componentResource) -}}
+  {{- with .Runner "_" -}}
+    {{- .SetOptions (dict "resource" $componentResource "export" "__hugo_runner") -}}
   {{- end -}}
 {{- end -}}
 
-{{- $uid := printf "%s-%s-%d" $rendererId $componentId math.Counter -}}
+{{- $uid := xxhash (printf "%s-%s-%d" $rendererId $componentId math.Counter) -}}
 {{- $jsonProps := .props | jsonify -}}
 
 {{- $renderedContentCode := printf `
   import { renderToStaticMarkup } from "%[1]s";
   import * as componentModule from "%[2]s";
-  __RUN__ = () => renderToStaticMarkup(componentModule[%[4]s], %[3]s, %[5]s);`
+  export default function() {
+  return renderToStaticMarkup({
+  Component: componentModule[%[4]s],
+  props: %[3]s,
+  children: %[6]s,
+  context: %[5]s,
+  });
+  }`
   .serverRendererPath
   .componentPath
   $jsonProps
   ("default" | jsonify)
   (dict "uid" $uid | jsonify)
+  (.inner | jsonify)
 -}}
 {{- $renderedResult := partial "utils/execJs" $renderedContentCode -}}
 
